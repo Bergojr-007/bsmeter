@@ -57,7 +57,10 @@ function extractOverallVerdict(content: string): Verdict | null {
   if (!match) return null; return match[1].toUpperCase() as Verdict
 }
 function extractSummary(content: string): string {
-  const match = content.match(/##\s*Summary\s*\n+([\s\S]*?)(?=\n##|\n###|$)/)
+  const match = content.match(/##\s*Summary\s*
++([\s\S]*?)(?=
+##|
+###|$)/)
   if (match) return match[1].trim().slice(0, 140); return content.slice(0, 140)
 }
 function timeAgo(ts: number): string {
