@@ -10,8 +10,11 @@ export const Route = createFileRoute('/api/stripe')({
             status: 500, headers: { 'Content-Type': 'application/json' }
           })
         }
+
         const body = await request.json()
         const { action } = body
+
+        // Create checkout session
         if (action === 'create_checkout') {
           const origin = request.headers.get('origin') || 'https://bsmeter.org'
           const res = await fetch('https://api.stripe.com/v1/checkout/sessions', {
@@ -29,3 +32,16 @@ export const Route = createFileRoute('/api/stripe')({
               'line_items[0][price_data][recurring][interval]': 'month',
               'line_items[0][price_data][unit_amount]': '499',
               'success_url': `${origin}/?pro=success`,
+              'cancel_url': `${origin}/?pro=cancel`,
+            }),
+          })
+          const session = await res.json()
+          if (session.error) return new Response(JSON.stringify({ error: session.error.message }), { status: 400, headers: { 'Content-Type': 'application/json' } })
+          return new Response(JSON.stringify({ url: session.url }), { headers: { 'Content-Type': 'application/json' } })
+        }
+
+        return new Response(JSON.stringify({ error: 'Unknown action' }), { status: 400, headers: { 'Content-Type': 'application/json' } })
+      }
+    }
+  }
+})
