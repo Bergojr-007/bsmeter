@@ -57,7 +57,10 @@ function extractOverallVerdict(content: string): Verdict | null {
   if (!match) return null; return match[1].toUpperCase() as Verdict
 }
 function extractSummary(content: string): string {
-  const match = content.match(/##\s*Summary\s*\n+([\s\S]*?)(?=\n##|\n###|$)/)
+  const match = content.match(/##\s*Summary\s*
++([\s\S]*?)(?=
+##|
+###|$)/)
   if (match) return match[1].trim().slice(0, 140); return content.slice(0, 140)
 }
 function timeAgo(ts: number): string {
@@ -98,7 +101,9 @@ function buildShareText(query: string, verdict: Verdict | null, bsScore: number)
   const mascot = cfg?.mascot ?? '🤔'
   const label = cfg?.label ?? 'Unknown'
   const scoreStr = bsScore >= 0 ? ` (${bsScore}% BS)` : ''
-  return `${mascot} "${query.slice(0, 80)}${query.length > 80 ? '...' : ''}" — Verdict: ${verdict ?? 'UNVERIFIED'}${scoreStr}\n\nFact-checked at bsmeter.org 😈`
+  return `${mascot} "${query.slice(0, 80)}${query.length > 80 ? '...' : ''}" — Verdict: ${verdict ?? 'UNVERIFIED'}${scoreStr}
+
+Fact-checked at bsmeter.org 😈`
 }
 
 // ─── Pro Upgrade Modal ────────────────────────────────────────────────────────
@@ -178,13 +183,15 @@ function ShareModal({ query, verdict, bsScore, onClose }: { query: string; verdi
   const dismiss = () => { setVisible(false); setTimeout(onClose, 300) }
 
   const copyText = async () => {
-    try { await navigator.clipboard.writeText(shareText + '\n' + shareUrl); setCopied(true); setTimeout(() => setCopied(false), 2000) } catch {}
+    try { await navigator.clipboard.writeText(shareText + '
+' + shareUrl); setCopied(true); setTimeout(() => setCopied(false), 2000) } catch {}
   }
 
   const shareTwitter = () => window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(shareUrl)}`, '_blank')
   const shareFacebook = () => window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}&quote=${encodeURIComponent(shareText)}`, '_blank')
   const shareTelegram = () => window.open(`https://t.me/share/url?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(shareText)}`, '_blank')
-  const shareWhatsApp = () => window.open(`https://wa.me/?text=${encodeURIComponent(shareText + '\n' + shareUrl)}`, '_blank')
+  const shareWhatsApp = () => window.open(`https://wa.me/?text=${encodeURIComponent(shareText + '
+' + shareUrl)}`, '_blank')
 
   return (
     <div className={`fixed inset-0 z-50 flex items-center justify-center transition-all duration-300 ${visible ? 'opacity-100' : 'opacity-0'}`}
