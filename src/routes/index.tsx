@@ -137,7 +137,20 @@ function ProModal({ onClose, checksUsed }: { onClose: () => void; checksUsed: nu
         {/* CTA */}
         <div className="px-6 pb-6">
           <button
-            onClick={() => { alert('Payment integration coming soon! Check back at bsmeter.org'); dismiss() }}
+            onClick={async () => {
+              try {
+                const res = await fetch('/api/stripe', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ action: 'create_checkout' })
+                })
+                const data = await res.json()
+                if (data.url) window.location.href = data.url
+                else alert('Payment setup in progress — check back soon!')
+              } catch {
+                alert('Payment setup in progress — check back soon!')
+              }
+            }}
             className="w-full py-3 rounded-xl text-white font-black text-base transition-transform hover:scale-105"
             style={{ background: 'linear-gradient(135deg, #ef4444, #dc2626)' }}
           >
@@ -603,7 +616,20 @@ function Home() {
   const [usage, setUsage] = useState<UsageData>({ date: new Date().toDateString(), count: 0, isPro: false })
   const { messages, sendMessage, isLoading, stop } = useAIChat()
 
-  useEffect(() => { setHistory(loadHistory()); setUsage(loadUsage()) }, [])
+  useEffect(() => {
+    setHistory(loadHistory())
+    const u = loadUsage()
+    // Handle Stripe success redirect
+    const params = new URLSearchParams(window.location.search)
+    if (params.get('pro') === 'success') {
+      const proData = { ...u, isPro: true }
+      saveUsage(proData); setUsage(proData)
+      window.history.replaceState({}, '', '/')
+      setTimeout(() => alert('🎉 Welcome to Bullshit Meter Pro! Unlimited checks unlocked. 😈'), 500)
+    } else {
+      setUsage(u)
+    }
+  }, [])
 
   // Save completed checks to history + increment usage
   useEffect(() => {
