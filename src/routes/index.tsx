@@ -3,7 +3,7 @@ import { createFileRoute } from '@tanstack/react-router'
 import { Link2, Square, Flame, CheckCircle, AlertTriangle, MessageSquare, History, Trash2, X, Clock, Share2, Crown, Zap } from 'lucide-react'
 import { Streamdown } from 'streamdown'
 import { useAIChat } from '@/lib/ai-hook'
-import type { ChatMessages } from '@/lib/ai-hook'
+import type { ChatMessages } from '@/lib/ai-hook'h
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type Verdict = 'TRUE' | 'MOSTLY TRUE' | 'MIXED' | 'MISLEADING' | 'MOSTLY FALSE' | 'FALSE' | 'UNVERIFIED' | 'OPINION'
@@ -615,6 +615,7 @@ function UsageBar({ usage, onUpgrade }: { usage: UsageData; onUpgrade: () => voi
 // ─── Main Home ────────────────────────────────────────────────────────────────
 function Home() {
   const [input, setInput] = useState('')
+  const [videoContextPending, setVideoContextPending] = useState<string | null>(null)
   const [historyOpen, setHistoryOpen] = useState(false)
   const [history, setHistory] = useState<HistoryEntry[]>([])
   const [replayEntry, setReplayEntry] = useState<HistoryEntry | null>(null)
@@ -660,19 +661,45 @@ function Home() {
     })
   }, [isLoading, messages])
 
+  const isVideoUrl = (t: string): boolean => {
+    try {
+      const u = new URL(t.trim())
+      return u.hostname.includes('youtube.com') || u.hostname === 'youtu.be' || u.hostname.includes('tiktok.com')
+    } catch { return false }
+  }
+
   const handleSend = useCallback((text: string) => {
     const current = loadUsage()
     if (!current.isPro && current.count >= FREE_LIMIT) { setShowProModal(true); return }
+
+    // If it's a plain video URL with no added context, ask first
+    if (isVideoUrl(text.trim()) && !videoContextPending) {
+      setVideoContextPending(text.trim())
+      setInput('')
+      return
+    }
+
+    // If we have a pending video URL, combine it with the user's context
+    let finalText = text
+    if (videoContextPending) {
+      finalText = videoContextPending + '\n\nSpecifically, please fact-check: ' + text
+      setVideoContextPending(null)
+    }
+
     const updated = { ...current, count: current.count + 1 }
     saveUsage(updated); setUsage(updated)
-    setReplayEntry(null); sendMessage(text); setInput('')
-  }, [sendMessage])
+    setReplayEntry(null); sendMessage(finalText); setInput('')
+  }, [sendMessage, videoContextPending])
 
   const handleDeleteEntry = useCallback((id: string) => { setHistory((prev) => { const u = prev.filter((e) => e.id !== id); saveHistory(u); return u }) }, [])
   const handleClearHistory = useCallback(() => { if (!confirm('Clear all history?')) return; setHistory([]); localStorage.removeItem(HISTORY_KEY) }, [])
 
   const hasMessages = messages.length > 0
-  const placeholder = hasMessages ? 'Ask a follow-up, or paste another claim...' : 'Paste a claim, headline, YouTube/TikTok URL, or news article...'
+  const placeholder = videoContextPending
+    ? 'Describe the specific claim or topic to fact-check in this video...'
+    : hasMessages
+      ? 'Ask a follow-up, or paste another claim...'
+      : 'Paste a claim, headline, YouTube/TikTok URL, or news article...'
 
   return (
     <div className="flex min-h-[calc(100vh-56px)] flex-col" style={{ background: '#1a1635' }}>
@@ -685,7 +712,34 @@ function Home() {
       )}
       {showProModal && <ProModal onClose={() => setShowProModal(false)} checksUsed={usage.count} />}
 
-      {/* Replay viewer */}
+      {/* Video context prompt */}
+        {videoContextPending && (
+          <div className="mx-auto w-full max-w-3xl px-4 pb-2">
+            <div
+              className="rounded-xl border px-4 py-3 text-sm"
+              style={{ background: 'rgba(83,74,171,0.18)', border: '1px solid rgba(131,111,214,0.35)', color: '#CECBF6' }}
+            >
+              <div className="mb-1 flex items-center gap-2 font-semibold" style={{ color: '#C084FC' }}>
+                ▶ Video URL detected
+                <button
+                  onClick={() => { setVideoContextPending(null); setInput('') }}
+                  className="ml-auto text-xs opacity-60 hover:opacity-100"
+                  style={{ color: '#AFA9EC' }}
+                >
+                  ✕ Cancel
+                </button>
+              </div>
+              <div style={{ color: '#AFA9EC' }}>
+                What specific claim or topic should I fact-check in this video?
+              </div>
+              <div className="mt-1 truncate text-xs" style={{ color: '#7F77DD' }}>
+                {videoContextPending}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Replay viewer */}
       {replayEntry && !hasMessages && (
         <div className="mx-auto w-full max-w-3xl px-4 pt-6 pb-4">
           <div className="flex items-center justify-between mb-3">
