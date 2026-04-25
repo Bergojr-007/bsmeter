@@ -180,15 +180,13 @@ function ShareModal({ query, verdict, bsScore, onClose }: { query: string; verdi
   const dismiss = () => { setVisible(false); setTimeout(onClose, 300) }
 
   const copyText = async () => {
-    try { await navigator.clipboard.writeText(shareText + '
-' + shareUrl); setCopied(true); setTimeout(() => setCopied(false), 2000) } catch {}
+    try { await navigator.clipboard.writeText(shareText + ' ' + shareUrl); setCopied(true); setTimeout(() => setCopied(false), 2000) } catch {}
   }
 
   const shareTwitter = () => window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(shareUrl)}`, '_blank')
   const shareFacebook = () => window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}&quote=${encodeURIComponent(shareText)}`, '_blank')
   const shareTelegram = () => window.open(`https://t.me/share/url?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(shareText)}`, '_blank')
-  const shareWhatsApp = () => window.open(`https://wa.me/?text=${encodeURIComponent(shareText + '
-' + shareUrl)}`, '_blank')
+  const shareWhatsApp = () => window.open(`https://wa.me/?text=${encodeURIComponent(shareText + ' ' + shareUrl)}`, '_blank')
 
   return (
     <div className={`fixed inset-0 z-50 flex items-center justify-center transition-all duration-300 ${visible ? 'opacity-100' : 'opacity-0'}`}
