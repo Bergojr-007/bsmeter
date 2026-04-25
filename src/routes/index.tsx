@@ -3,7 +3,7 @@ import { createFileRoute } from '@tanstack/react-router'
 import { Link2, Square, Flame, CheckCircle, AlertTriangle, MessageSquare, History, Trash2, X, Clock, Share2, Crown, Zap } from 'lucide-react'
 import { Streamdown } from 'streamdown'
 import { useAIChat } from '@/lib/ai-hook'
-import type { ChatMessages } from '@/lib/ai-hook'h
+import type { ChatMessages } from '@/lib/ai-hook'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type Verdict = 'TRUE' | 'MOSTLY TRUE' | 'MIXED' | 'MISLEADING' | 'MOSTLY FALSE' | 'FALSE' | 'UNVERIFIED' | 'OPINION'
