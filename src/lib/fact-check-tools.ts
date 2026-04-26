@@ -24,7 +24,6 @@ function extractTikTokInfo(url: string): boolean {
 }
 
 async function fetchYouTubeInfo(videoId: string): Promise<{ title?: string; description?: string; transcript?: string }> {
-  // Fetch the YouTube watch page and pull out metadata + auto-captions
   const controller = new AbortController()
   const timeout = setTimeout(() => controller.abort(), 12_000)
   try {
@@ -37,17 +36,14 @@ async function fetchYouTubeInfo(videoId: string): Promise<{ title?: string; desc
     })
     const html = await res.text()
 
-    // Extract title
     const titleMatch = html.match(/"title":"([^"]+)"/)
     const title = titleMatch ? titleMatch[1].replace(/\\u0026/g, '&') : undefined
 
-    // Extract description
     const descMatch = html.match(/"shortDescription":"([\s\S]*?)"(?:,"isCrawlable)/)
     const description = descMatch
       ? descMatch[1].replace(/\\n/g, ' ').replace(/\\"/g, '"').slice(0, 1000)
       : undefined
 
-    // Extract caption track URL
     const captionMatch = html.match(/"captionTracks":\[.*?"baseUrl":"([^"]+)"/)
     let transcript: string | undefined
 
@@ -55,7 +51,6 @@ async function fetchYouTubeInfo(videoId: string): Promise<{ title?: string; desc
       const captionUrl = captionMatch[1].replace(/\\u0026/g, '&')
       const capRes = await fetch(captionUrl, { signal: controller.signal })
       const capXml = await capRes.text()
-      // Strip XML tags and decode entities
       transcript = capXml
         .replace(/<[^>]+>/g, ' ')
         .replace(/&amp;/g, '&')
@@ -164,6 +159,17 @@ export const fetchWebPage = fetchWebPageToolDef.server(async ({ url }) => {
       })
       const html = await res.text()
       const { title, text } = stripHtml(html)
+      const usableContent = text.length > 500 && !text.includes('Enable JavaScript') && !text.includes('SIGI_STATE')
+      if (!usableContent) {
+        return {
+          url: res.url,
+          status: res.status,
+          title,
+          text: 'TIKTOK_BLOCKED: No usable content could be extracted from this TikTok URL. TikTok requires JavaScript and blocks automated access.',
+          truncated: false,
+          mediaType: 'tiktok' as const,
+        }
+      }
       const truncated = text.length > MAX_CHARS
       return {
         url: res.url,
@@ -177,7 +183,7 @@ export const fetchWebPage = fetchWebPageToolDef.server(async ({ url }) => {
       return {
         url,
         status: 0,
-        text: `TikTok page could not be fetched: ${error?.message || 'unknown error'}. Note: TikTok heavily restricts scraping — analyze based on any visible metadata only.`,
+        text: 'TIKTOK_BLOCKED: Could not fetch this TikTok video. TikTok blocks automated access.',
         truncated: false,
         mediaType: 'tiktok' as const,
       }
