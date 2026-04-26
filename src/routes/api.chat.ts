@@ -19,8 +19,10 @@ Given a claim, tweet, headline, article excerpt, YouTube video, TikTok video, or
 TOOLS
 - If the user pastes a URL (including YouTube or TikTok links), use the fetchWebPage tool to pull the actual content before analyzing. Never guess the contents of a link.
 - For YouTube videos: the tool will return the video title, description, and transcript (if available). Analyze the spoken claims in the transcript.
-- For TikTok videos: the tool will return available metadata. Analyze what can be verified from the content.
+- For TikTok videos: the tool will attempt to fetch metadata. TikTok heavily blocks scraping, so content is often unavailable.
 - Never skip using the tool for URLs — always fetch first.
+- If a TikTok URL returns no usable content (only generic metadata or an error), respond with ONLY this short message: "TikTok blocks automated access, so I can't read this video. Copy and paste the specific claim you want fact-checked and I'll analyze it instantly." Do NOT ask clarifying questions.
+- If a YouTube URL returns no transcript and no description, respond with ONLY this short message: "I couldn't extract content from this YouTube video — no transcript was available. Copy and paste the specific claim from the video and I'll fact-check it right away." Do NOT ask clarifying questions.
 
 VERDICT SCALE (use these exact labels)
 - TRUE - supported by solid evidence
@@ -64,63 +66,5 @@ HARD RULES
 - Do not show partisan preference. Apply the same skepticism to all sides.
 - Never invent sources, studies, quotes, or statistics.
 - Keep analysis focused on verifiable facts, not political opinion.
-- For YouTube/TikTok content: focus on spoken claims and on-screen text. Note if no transcript was available.
-- For follow-up questions in the same conversation, stay in fact-checker mode and keep answers concise.`
-
-export const Route = createFileRoute('/api/chat')({
-  server: {
-    handlers: {
-      POST: async ({ request }) => {
-        const requestSignal = request.signal
-        if (requestSignal.aborted) return new Response(null, { status: 499 })
-        const abortController = new AbortController()
-        try {
-          const body = await request.json()
-          const { messages } = body
-          const data = body.data || {}
-
-          let provider: 'anthropic' | 'openai' | 'gemini' | 'ollama' = data.provider || 'ollama'
-          let model: string = data.model || 'mistral:7b'
-
-          if (process.env.ANTHROPIC_API_KEY) {
-            provider = 'anthropic'
-            model = 'claude-haiku-4-5'
-          } else if (process.env.OPENAI_API_KEY) {
-            provider = 'openai'
-            model = 'gpt-4o'
-          } else if (process.env.GEMINI_API_KEY) {
-            provider = 'gemini'
-            model = 'gemini-2.0-flash-exp'
-          }
-
-          const adapterConfig = {
-            anthropic: () => anthropicText((model || 'claude-haiku-4-5') as any),
-            openai: () => openaiText((model || 'gpt-4o') as any),
-            gemini: () => geminiText((model || 'gemini-2.0-flash-exp') as any),
-            ollama: () => ollamaText((model || 'mistral:7b') as any),
-          }
-
-          const adapter = adapterConfig[provider]()
-          const stream = chat({
-            adapter,
-            tools: [fetchWebPage],
-            systemPrompts: [SYSTEM_PROMPT],
-            agentLoopStrategy: maxIterations(5),
-            messages,
-            abortController,
-          })
-          return toServerSentEventsResponse(stream, { abortController })
-        } catch (error: any) {
-          console.error('BS Meter error:', error)
-          if (error.name === 'AbortError' || abortController.signal.aborted) {
-            return new Response(null, { status: 499 })
-          }
-          return new Response(
-            JSON.stringify({ error: 'Failed to process request', message: error.message }),
-            { status: 500, headers: { 'Content-Type': 'application/json' } },
-          )
-        }
-      },
-    },
-  },
-})
+- For YouTube/TikTok content
+            
