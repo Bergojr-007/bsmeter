@@ -31,6 +31,7 @@ export const Route = createFileRoute('/api/stripe')({
               'line_items[0][price_data][product_data][description]': 'Unlimited fact-checks, YouTube & TikTok analysis, full history',
               'line_items[0][price_data][recurring][interval]': 'month',
               'line_items[0][price_data][unit_amount]': '499',
+                  'line_items[0][quantity]': '1',
               'success_url': `${origin}/?pro=success`,
               'cancel_url': `${origin}/?pro=cancel`,
             }),
