@@ -516,7 +516,24 @@ function HowItWorks() {
             ))}
           </div>
           {/* Pricing teaser */}
-          <div className="mt-6 rounded-xl p-4 flex items-center justify-between gap-4" style={{ background: '#26215C', border: '0.5px solid #534AB7' }}>
+          <button
+            onClick={async () => {
+              try {
+                const res = await fetch('/api/stripe', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ action: 'create_checkout' }),
+                })
+                const data = await res.json()
+                if (data.url) window.location.href = data.url
+                else alert('Payment setup in progress — check back soon!')
+              } catch {
+                alert('Payment setup in progress — check back soon!')
+              }
+            }}
+            className="mt-6 rounded-xl p-4 flex items-center justify-between gap-4 w-full cursor-pointer hover:opacity-90 transition-opacity"
+            style={{ background: '#26215C', border: '0.5px solid #534AB7' }}
+          >
             <div>
               <div className="text-xs font-black uppercase tracking-wider mb-1" style={{ color: '#CECBF6' }}>👑 Go Pro</div>
               <div className="text-xs" style={{ color: '#7F77DD' }}>Unlimited checks · Priority · Full history</div>
@@ -525,7 +542,7 @@ function HowItWorks() {
               <div className="text-lg font-black" style={{ color: '#fff' }}>{PRO_PRICE}<span className="text-xs font-normal" style={{ color: '#7F77DD' }}>/mo</span></div>
               <div className="text-[10px]" style={{ color: '#7F77DD' }}>{FREE_LIMIT} free/day</div>
             </div>
-          </div>
+          </button>
         </div>
       </div>
     </section>
