@@ -636,7 +636,7 @@ function Home() {
   const [usage, setUsage] = useState<UsageData>({ date: new Date().toDateString(), count: 0, isPro: false })
   const { messages, sendMessage, isLoading, stop } = useAIChat()
 
-  useEffect(() => {
+ useEffect(() => {
     setHistory(loadHistory())
     const u = loadUsage()
     // Handle Stripe success redirect
@@ -649,8 +649,24 @@ function Home() {
     } else {
       setUsage(u)
     }
+    // Handle ?q= parameter from browser extension or shared links
+    const qParam = params.get('q')
+    if (qParam && qParam.trim()) {
+      const decoded = decodeURIComponent(qParam.trim())
+      window.history.replaceState({}, '', '/')
+      setTimeout(() => {
+        const current = loadUsage()
+        if (!current.isPro && current.count >= FREE_LIMIT) {
+          setInput(decoded)
+          setShowProModal(true)
+          return
+        }
+        const updated = { ...current, count: current.count + 1 }
+        saveUsage(updated); setUsage(updated)
+        sendMessage(decoded)
+      }, 300)
+    }
   }, [])
-
   // Save completed checks to history + increment usage
   useEffect(() => {
     if (isLoading || messages.length < 2) return
